@@ -1,3 +1,6 @@
+//go:build (linux && ignore) || arm64
+// +build linux,ignore arm64
+
 package raspi
 
 import (
