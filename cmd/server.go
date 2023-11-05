@@ -13,7 +13,11 @@ func main() {
 	raspiCollector := raspi.NewCollector()
 	prometheus.MustRegister(raspiCollector)
 	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":8082", nil)
+	err := http.ListenAndServe(":8082", nil)
 
-	log.Println("Started RasPI KVM exporter on port 8082")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	log.Println("Exporter started at port 8082")
 }
