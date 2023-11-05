@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"raspikvm_exporter/internal/kvm"
@@ -11,13 +12,16 @@ import (
 )
 
 func main() {
+	listenPort := flag.String("web.listen-address", ":9000", "Port to used by server to listen.")
+	flag.Parse()
+
 	raspiCollector := raspi.NewCollector()
 	kvmCollector := kvm.NewCollector()
 	prometheus.MustRegister(raspiCollector, kvmCollector)
 
 	http.Handle("/metrics", promhttp.Handler())
-	log.Println("Exporter starting at port 8082")
-	err := http.ListenAndServe(":8082", nil)
+	log.Printf("Exporter starting at port %s", *listenPort)
+	err := http.ListenAndServe(":"+*listenPort, nil)
 
 	if err != nil {
 		log.Fatal(err.Error())
