@@ -44,7 +44,9 @@ func getVirshMetrics() VirshMetrics {
 	for _, domain := range domains {
 		state, _, mem, _, cpuTime, _ := l.DomainGetInfo(domain)
 		metrics.VMStatus[domain.Name] = float64(state)
-		metrics.MemoryStatus[domain.Name] = float64((mem / 1000) / 1024)
+		memKb := (mem / 1000) + (mem % 1000)
+		memMb := (memKb / 1024) + (memKb % 1024)
+		metrics.MemoryStatus[domain.Name] = float64(memMb)
 		metrics.CPUTime[domain.Name] = float64(cpuTime)
 	}
 
