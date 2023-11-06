@@ -19,7 +19,7 @@ func getCpuTemp() float64 {
 		return 0
 	}
 
-	output := string(out)
+	output := string(out[:len(out)-1])
 	output = strings.Replace(output, "temp=", "", -1)
 	output = strings.Replace(output, "'C", "", -1)
 
