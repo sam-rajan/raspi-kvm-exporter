@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	listenPort := flag.String("web.listen-address", ":9000", "Port to used by server to listen.")
+	listenPort := flag.String("exporter.port", ":9000", "Port to used by server to listen.")
 	flag.Parse()
 
 	raspiCollector := raspi.NewCollector()
