@@ -59,18 +59,20 @@ func (collector *Collector) Describe(ch chan<- *prometheus.Desc) {
 
 func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
 
+	log.Println("Starting Raspi Metrics collection")
+
 	up := prometheus.MustNewConstMetric(collector.Up, prometheus.GaugeValue, 1.0)
-	up = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), up)
+	up = prometheus.NewMetricWithTimestamp(time.Now(), up)
 	ch <- up
 
 	cpuTemp := getCpuTemp()
 	cpuTempMetric := prometheus.MustNewConstMetric(collector.CpuTemp, prometheus.GaugeValue, cpuTemp)
-	cpuTempMetric = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), cpuTempMetric)
+	cpuTempMetric = prometheus.NewMetricWithTimestamp(time.Now(), cpuTempMetric)
 	ch <- cpuTempMetric
 
 	memoryUsage := getUsedMemory()
 	memoryUsageMetric := prometheus.MustNewConstMetric(collector.MemoryUsage, prometheus.GaugeValue, memoryUsage)
-	memoryUsageMetric = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), memoryUsageMetric)
+	memoryUsageMetric = prometheus.NewMetricWithTimestamp(time.Now(), memoryUsageMetric)
 	ch <- memoryUsageMetric
 
 	cpuUsages := getCpuUsage()
@@ -80,7 +82,7 @@ func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
 			labelValue = "cpu"
 		}
 		cpuUsageMetric := prometheus.MustNewConstMetric(collector.CpuUsage, prometheus.GaugeValue, cpuUsage, labelValue)
-		cpuUsageMetric = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), cpuUsageMetric)
+		cpuUsageMetric = prometheus.NewMetricWithTimestamp(time.Now(), cpuUsageMetric)
 		ch <- cpuUsageMetric
 	}
 
@@ -88,17 +90,17 @@ func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
 	for key, val := range transmittedNetworkMetrics {
 		transmittedNetworkBytesMetrics := prometheus.MustNewConstMetric(collector.NetSent, prometheus.GaugeValue,
 			float64(val["tx_bytes"]), "tx_bytes", key)
-		transmittedNetworkBytesMetrics = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), transmittedNetworkBytesMetrics)
+		transmittedNetworkBytesMetrics = prometheus.NewMetricWithTimestamp(time.Now(), transmittedNetworkBytesMetrics)
 		ch <- transmittedNetworkBytesMetrics
 
 		transmittedErrorsMetrics := prometheus.MustNewConstMetric(collector.NetSent, prometheus.GaugeValue,
 			float64(val["tx_errors"]), "tx_errors", key)
-		transmittedErrorsMetrics = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), transmittedErrorsMetrics)
+		transmittedErrorsMetrics = prometheus.NewMetricWithTimestamp(time.Now(), transmittedErrorsMetrics)
 		ch <- transmittedErrorsMetrics
 
 		transmittedDroppedMetrics := prometheus.MustNewConstMetric(collector.NetSent, prometheus.GaugeValue,
 			float64(val["tx_drops"]), "tx_drops", key)
-		transmittedDroppedMetrics = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), transmittedDroppedMetrics)
+		transmittedDroppedMetrics = prometheus.NewMetricWithTimestamp(time.Now(), transmittedDroppedMetrics)
 		ch <- transmittedDroppedMetrics
 	}
 
@@ -106,18 +108,20 @@ func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
 	for key, val := range receievedNetworkMetrics {
 		receivedNetworkBytesMetrics := prometheus.MustNewConstMetric(collector.NetReceived, prometheus.GaugeValue,
 			float64(val["rx_bytes"]), "rx_bytes", key)
-		receivedNetworkBytesMetrics = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), receivedNetworkBytesMetrics)
+		receivedNetworkBytesMetrics = prometheus.NewMetricWithTimestamp(time.Now(), receivedNetworkBytesMetrics)
 		ch <- receivedNetworkBytesMetrics
 
 		receivedErrorsMetrics := prometheus.MustNewConstMetric(collector.NetReceived, prometheus.GaugeValue,
 			float64(val["rx_errors"]), "rx_errors", key)
-		receivedErrorsMetrics = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), receivedErrorsMetrics)
+		receivedErrorsMetrics = prometheus.NewMetricWithTimestamp(time.Now(), receivedErrorsMetrics)
 		ch <- receivedErrorsMetrics
 
 		receivedDroppedMetrics := prometheus.MustNewConstMetric(collector.NetReceived, prometheus.GaugeValue,
 			float64(val["rx_drops"]), "rx_drops", key)
-		receivedDroppedMetrics = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), receivedDroppedMetrics)
+		receivedDroppedMetrics = prometheus.NewMetricWithTimestamp(time.Now(), receivedDroppedMetrics)
 		ch <- receivedDroppedMetrics
 	}
+
+	log.Println("Finished Raspi Metrics collection")
 
 }

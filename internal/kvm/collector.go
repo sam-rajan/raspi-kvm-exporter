@@ -46,23 +46,27 @@ func (collector *Collector) Describe(ch chan<- *prometheus.Desc) {
 
 func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
 
+	log.Println("Starting KVM metrics collection")
+
 	domainMetrics := getVirshMetrics()
 
 	for key, val := range domainMetrics.VMStatus {
 		domainUpMetric := prometheus.MustNewConstMetric(collector.DomainsUp, prometheus.GaugeValue, val, key)
-		domainUpMetric = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), domainUpMetric)
+		domainUpMetric = prometheus.NewMetricWithTimestamp(time.Now(), domainUpMetric)
 		ch <- domainUpMetric
 	}
 
 	for key, val := range domainMetrics.MemoryStatus {
 		domainMemoryMetric := prometheus.MustNewConstMetric(collector.DomainMemoryUsage, prometheus.GaugeValue, val, key)
-		domainMemoryMetric = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), domainMemoryMetric)
+		domainMemoryMetric = prometheus.NewMetricWithTimestamp(time.Now(), domainMemoryMetric)
 		ch <- domainMemoryMetric
 	}
 
 	for key, val := range domainMetrics.CPUTime {
 		cpuTimeMetric := prometheus.MustNewConstMetric(collector.DomainCpuUsage, prometheus.GaugeValue, val, key)
-		cpuTimeMetric = prometheus.NewMetricWithTimestamp(time.Now().Add(-time.Hour), cpuTimeMetric)
+		cpuTimeMetric = prometheus.NewMetricWithTimestamp(time.Now(), cpuTimeMetric)
 		ch <- cpuTimeMetric
 	}
+
+	log.Println("Finished KVM Metrics collection")
 }
