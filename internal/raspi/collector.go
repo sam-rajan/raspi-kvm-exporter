@@ -1,12 +1,10 @@
-//go:build linux && arm64
-// +build linux,arm64
-
 package raspi
 
 import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,6 +21,9 @@ type Collector struct {
 	CpuUsage    *prometheus.Desc
 	NetReceived *prometheus.Desc
 	NetSent     *prometheus.Desc
+	DiskUsage   *prometheus.Desc
+	ReadBytes   *prometheus.Desc
+	WriteBytes  *prometheus.Desc
 }
 
 func NewCollector() *Collector {
@@ -45,6 +46,12 @@ func NewCollector() *Collector {
 			"Network Received bytes", []string{"type", "interface"}, prometheus.Labels{"host": hostname}),
 		NetSent: prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "network_sent_kb"),
 			"Network Sent bytes", []string{"type", "interface"}, prometheus.Labels{"host": hostname}),
+		DiskUsage: prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "disk_usage_bytes"),
+			"Disk Usage", []string{"device", "total", "mountpoint"}, prometheus.Labels{}),
+		ReadBytes: prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "disk_read_bytes"),
+			"Disk Read Bytes", []string{"device", "mountpoint"}, prometheus.Labels{}),
+		WriteBytes: prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "disk_write_bytes"),
+			"Disk Write Bytes", []string{"device", "mountpoint"}, prometheus.Labels{}),
 	}
 }
 
@@ -55,6 +62,9 @@ func (collector *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.CpuUsage
 	ch <- collector.NetReceived
 	ch <- collector.NetSent
+	ch <- collector.DiskUsage
+	ch <- collector.ReadBytes
+	ch <- collector.WriteBytes
 }
 
 func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
@@ -120,6 +130,25 @@ func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
 			float64(val["rx_drops"]), "rx_drops", key)
 		receivedDroppedMetrics = prometheus.NewMetricWithTimestamp(time.Now(), receivedDroppedMetrics)
 		ch <- receivedDroppedMetrics
+	}
+
+	diskMetrics := getDiskUsage()
+	for _, diskMetrics := range diskMetrics {
+		diskUsage := prometheus.MustNewConstMetric(collector.DiskUsage, prometheus.GaugeValue,
+			float64(diskMetrics.usedSize), diskMetrics.deviceName,
+			strconv.FormatUint(diskMetrics.totalSize, 10), diskMetrics.mountpoint)
+		diskUsage = prometheus.NewMetricWithTimestamp(time.Now(), diskUsage)
+		ch <- diskUsage
+
+		readBytes := prometheus.MustNewConstMetric(collector.ReadBytes, prometheus.GaugeValue,
+			float64(diskMetrics.readBytes), diskMetrics.deviceName, diskMetrics.mountpoint)
+		readBytes = prometheus.NewMetricWithTimestamp(time.Now(), readBytes)
+		ch <- readBytes
+
+		writeBytes := prometheus.MustNewConstMetric(collector.WriteBytes, prometheus.GaugeValue,
+			float64(diskMetrics.writeBytes), diskMetrics.deviceName, diskMetrics.mountpoint)
+		writeBytes = prometheus.NewMetricWithTimestamp(time.Now(), writeBytes)
+		ch <- writeBytes
 	}
 
 	log.Println("Finished Raspi Metrics collection")
