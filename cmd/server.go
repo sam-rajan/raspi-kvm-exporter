@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"raspikvm_exporter/internal/kvm"
 	"raspikvm_exporter/internal/raspi"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,8 +16,8 @@ func main() {
 	flag.Parse()
 
 	raspiCollector := raspi.NewCollector()
-	//kvmCollector := kvm.NewCollector()
-	prometheus.MustRegister(raspiCollector)
+	kvmCollector := kvm.NewCollector()
+	prometheus.MustRegister(raspiCollector, kvmCollector)
 
 	http.Handle("/metrics", promhttp.Handler())
 	log.Printf("Exporter starting at port %s", *listenPort)
