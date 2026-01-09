@@ -11,15 +11,10 @@ type Collector struct {
 }
 
 type RaspiCollectorConfig struct {
-	Enabled bool              `yaml:"enabled"`
-	Disk    DiskMetricsConfig `yaml:"disk"`
+	Enabled *bool          `yaml:"enabled,omitempty"`
+	Disk    map[string]any `yaml:"disk,omitempty"`
 }
 
 type KvmCollectorConfig struct {
-	Enabled bool `yaml:"enabled"`
-}
-
-type DiskMetricsConfig struct {
-	Enabled bool     `yaml:"enabled"`
-	Devices []string `yaml:"devices"`
+	Enabled *bool `yaml:"enabled,omitempty"`
 }

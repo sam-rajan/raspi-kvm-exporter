@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -10,5 +11,12 @@ func (config *CollectorConfig) LoadConfig(filepath string) error {
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(data, config)
+
+	err = yaml.Unmarshal(data, config)
+	if err != nil {
+		return err
+	}
+	setDefaultConfigValue(config)
+
+	return nil
 }

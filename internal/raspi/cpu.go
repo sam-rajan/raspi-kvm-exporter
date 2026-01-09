@@ -2,21 +2,25 @@ package raspi
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"raspikvm_exporter/internal/config"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-func getCpuTemp() float64 {
+func getCpuTemp(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.RaspiCollectorConfig) {
 	cmd := exec.Command("vcgencmd", "measure_temp")
 	out, err := cmd.Output()
 
 	if err != nil {
 		log.Println("Error executing vcgencmd measure_temp. Error:", err.Error())
-		return 0
+		out = []byte("temp=0.0'C ")
 	}
 
 	output := string(out[:len(out)-1])
@@ -27,13 +31,15 @@ func getCpuTemp() float64 {
 
 	if err != nil {
 		log.Println("Failed to convert vcgencmd measure_temp output to Float. Error:", err.Error())
-		return 0
+		outputFloat = 0.0
 	}
 
-	return outputFloat
+	cpuTempMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, outputFloat)
+	cpuTempMetric = prometheus.NewMetricWithTimestamp(time.Now(), cpuTempMetric)
+	ch <- cpuTempMetric
 }
 
-func getCpuUsage() []float64 {
+func getCpuUsage(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.RaspiCollectorConfig) {
 
 	cpuUsages := []float64{}
 	prevIdleTime, prevTotalTime := []float64{}, []float64{}
@@ -42,7 +48,7 @@ func getCpuUsage() []float64 {
 		statFile, err := os.OpenFile("/proc/stat", os.O_RDONLY, 0444)
 		if err != nil {
 			log.Println("Failed to open /proc/stat, Error: ", err.Error())
-			return cpuUsages
+			break
 		}
 
 		defer statFile.Close()
@@ -80,5 +86,14 @@ func getCpuUsage() []float64 {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return cpuUsages
+	for i, cpuUsage := range cpuUsages {
+		labelValue := fmt.Sprintf("cpu%d", i-1)
+		if i == 0 {
+			labelValue = "cpu"
+		}
+		cpuUsageMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, cpuUsage, labelValue)
+		cpuUsageMetric = prometheus.NewMetricWithTimestamp(time.Now(), cpuUsageMetric)
+		ch <- cpuUsageMetric
+	}
+
 }
