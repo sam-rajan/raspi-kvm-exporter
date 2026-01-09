@@ -30,13 +30,13 @@ func main() {
 		}
 	}
 
-	if collectorConfig.Collectors.Kvm.Enabled {
-		kvmCollector := kvm.NewCollector()
+	if *collectorConfig.Collectors.Kvm.Enabled {
+		kvmCollector := kvm.NewCollector(&collectorConfig.Collectors.Kvm)
 		prometheus.MustRegister(kvmCollector)
 	}
 
-	if collectorConfig.Collectors.Raspi.Enabled {
-		raspiCollector := raspi.NewCollector()
+	if *collectorConfig.Collectors.Raspi.Enabled {
+		raspiCollector := raspi.NewCollector(&collectorConfig.Collectors.Raspi)
 		prometheus.MustRegister(raspiCollector)
 	}
 
