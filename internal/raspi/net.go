@@ -4,9 +4,53 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"raspikvm_exporter/internal/config"
 	"strconv"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+func getSentMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.RaspiCollectorConfig) {
+	transmittedNetworkMetrics := getNetworkMetrics("tx")
+	for key, val := range transmittedNetworkMetrics {
+		transmittedNetworkBytesMetrics := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
+			float64(val["tx_bytes"]), "tx_bytes", key)
+		transmittedNetworkBytesMetrics = prometheus.NewMetricWithTimestamp(time.Now(), transmittedNetworkBytesMetrics)
+		ch <- transmittedNetworkBytesMetrics
+
+		transmittedErrorsMetrics := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
+			float64(val["tx_errors"]), "tx_errors", key)
+		transmittedErrorsMetrics = prometheus.NewMetricWithTimestamp(time.Now(), transmittedErrorsMetrics)
+		ch <- transmittedErrorsMetrics
+
+		transmittedDroppedMetrics := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
+			float64(val["tx_drops"]), "tx_drops", key)
+		transmittedDroppedMetrics = prometheus.NewMetricWithTimestamp(time.Now(), transmittedDroppedMetrics)
+		ch <- transmittedDroppedMetrics
+	}
+}
+
+func getReceievedMetrics(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.RaspiCollectorConfig) {
+	receievedNetworkMetrics := getNetworkMetrics("rx")
+	for key, val := range receievedNetworkMetrics {
+		receivedNetworkBytesMetrics := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
+			float64(val["rx_bytes"]), "rx_bytes", key)
+		receivedNetworkBytesMetrics = prometheus.NewMetricWithTimestamp(time.Now(), receivedNetworkBytesMetrics)
+		ch <- receivedNetworkBytesMetrics
+
+		receivedErrorsMetrics := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
+			float64(val["rx_errors"]), "rx_errors", key)
+		receivedErrorsMetrics = prometheus.NewMetricWithTimestamp(time.Now(), receivedErrorsMetrics)
+		ch <- receivedErrorsMetrics
+
+		receivedDroppedMetrics := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
+			float64(val["rx_drops"]), "rx_drops", key)
+		receivedDroppedMetrics = prometheus.NewMetricWithTimestamp(time.Now(), receivedDroppedMetrics)
+		ch <- receivedDroppedMetrics
+	}
+
+}
 
 func getNetworkMetrics(kind string) map[string]map[string]int64 {
 

@@ -2,9 +2,12 @@ package kvm
 
 import (
 	"log"
+	"raspikvm_exporter/internal/config"
+	"time"
 
 	"github.com/digitalocean/go-libvirt"
 	"github.com/digitalocean/go-libvirt/socket/dialers"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type VirshMetrics struct {
@@ -13,9 +16,15 @@ type VirshMetrics struct {
 	CPUTime      map[string]float64
 }
 
-func getVirshMetrics() VirshMetrics {
+var virshMetrics = &VirshMetrics{
+	VMStatus:     map[string]float64{},
+	MemoryStatus: map[string]float64{},
+	CPUTime:      map[string]float64{},
+}
 
-	metrics := VirshMetrics{
+func getDomainsUp(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.KvmCollectorConfig) {
+
+	metrics := &VirshMetrics{
 		VMStatus:     map[string]float64{},
 		MemoryStatus: map[string]float64{},
 		CPUTime:      map[string]float64{},
@@ -24,13 +33,13 @@ func getVirshMetrics() VirshMetrics {
 	l := libvirt.NewWithDialer(dialers.NewLocal())
 	if err := l.Connect(); err != nil {
 		log.Printf("Failed to connect: %s", err.Error())
-		return metrics
+		return
 	}
 
 	domains, _, err := l.ConnectListAllDomains(1, libvirt.ConnectListDomainsActive)
 	if err != nil {
 		log.Printf("failed to retrieve domains: %v", err)
-		return metrics
+		return
 	}
 
 	for _, domain := range domains {
@@ -42,5 +51,26 @@ func getVirshMetrics() VirshMetrics {
 		metrics.CPUTime[domain.Name] = float64(cpuTime)
 	}
 
-	return metrics
+	for key, val := range virshMetrics.VMStatus {
+		domainUpMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, val, key)
+		domainUpMetric = prometheus.NewMetricWithTimestamp(time.Now(), domainUpMetric)
+		ch <- domainUpMetric
+	}
+
+}
+
+func getDomainMemoryUsage(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.KvmCollectorConfig) {
+	for key, val := range virshMetrics.MemoryStatus {
+		domainMemoryMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, val, key)
+		domainMemoryMetric = prometheus.NewMetricWithTimestamp(time.Now(), domainMemoryMetric)
+		ch <- domainMemoryMetric
+	}
+}
+
+func getDomainCpuUsage(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.KvmCollectorConfig) {
+	for key, val := range virshMetrics.CPUTime {
+		cpuTimeMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, val, key)
+		cpuTimeMetric = prometheus.NewMetricWithTimestamp(time.Now(), cpuTimeMetric)
+		ch <- cpuTimeMetric
+	}
 }

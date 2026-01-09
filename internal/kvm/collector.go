@@ -6,7 +6,7 @@ package kvm
 import (
 	"log"
 	"os"
-	"time"
+	"raspikvm_exporter/internal/config"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -15,10 +15,16 @@ const (
 	NameSpace = "kvm"
 )
 
+var vmCollectorConfig *config.KvmCollectorConfig
+
+var metricGenerator = map[string]func(chan<- prometheus.Metric, *prometheus.Desc, config.KvmCollectorConfig){
+	"domainsUp":         getDomainsUp,
+	"domainMemoryUsage": getDomainMemoryUsage,
+	"domainCpuUsage":    getDomainCpuUsage,
+}
+
 type Collector struct {
-	DomainsUp         *prometheus.Desc
-	DomainMemoryUsage *prometheus.Desc
-	DomainCpuUsage    *prometheus.Desc
+	Metrices map[string]*prometheus.Desc
 }
 
 func NewCollector() *Collector {
@@ -29,43 +35,28 @@ func NewCollector() *Collector {
 	}
 
 	return &Collector{
-		DomainsUp: prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domain_up"),
-			"KVM virtual machine status (1 = UP, 0 = DOWN).", []string{"vm"}, prometheus.Labels{"host": hostname}),
-		DomainMemoryUsage: prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domain_memory_usage_mb"),
-			"Virtual machine memory usage", []string{"vm"}, prometheus.Labels{"host": hostname}),
-		DomainCpuUsage: prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domain_cpu_time_ms"),
-			"Virtual machine cpu time", []string{"vm"}, prometheus.Labels{"host": hostname}),
+		Metrices: map[string]*prometheus.Desc{
+			"domainsUp": prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domains_up"),
+				"Number of domains up", nil, prometheus.Labels{"host": hostname}),
+			"domainMemoryUsage": prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domain_memory_usage_mb"),
+				"Virtual machine memory usage", []string{"vm"}, prometheus.Labels{"host": hostname}),
+			"domainCpuUsage": prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domain_cpu_time_ms"),
+				"Virtual machine cpu time", []string{"vm"}, prometheus.Labels{"host": hostname}),
+		},
 	}
 }
 
 func (collector *Collector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- collector.DomainsUp
-	ch <- collector.DomainMemoryUsage
-	ch <- collector.DomainCpuUsage
+	for _, val := range collector.Metrices {
+		ch <- val
+	}
 }
 
 func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	log.Println("Starting KVM metrics collection")
-
-	domainMetrics := getVirshMetrics()
-
-	for key, val := range domainMetrics.VMStatus {
-		domainUpMetric := prometheus.MustNewConstMetric(collector.DomainsUp, prometheus.GaugeValue, val, key)
-		domainUpMetric = prometheus.NewMetricWithTimestamp(time.Now(), domainUpMetric)
-		ch <- domainUpMetric
-	}
-
-	for key, val := range domainMetrics.MemoryStatus {
-		domainMemoryMetric := prometheus.MustNewConstMetric(collector.DomainMemoryUsage, prometheus.GaugeValue, val, key)
-		domainMemoryMetric = prometheus.NewMetricWithTimestamp(time.Now(), domainMemoryMetric)
-		ch <- domainMemoryMetric
-	}
-
-	for key, val := range domainMetrics.CPUTime {
-		cpuTimeMetric := prometheus.MustNewConstMetric(collector.DomainCpuUsage, prometheus.GaugeValue, val, key)
-		cpuTimeMetric = prometheus.NewMetricWithTimestamp(time.Now(), cpuTimeMetric)
-		ch <- cpuTimeMetric
+	for key, desc := range collector.Metrices {
+		metricGenerator[key](ch, desc, *vmCollectorConfig)
 	}
 
 	log.Println("Finished KVM Metrics collection")

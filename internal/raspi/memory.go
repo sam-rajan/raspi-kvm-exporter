@@ -4,16 +4,20 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"raspikvm_exporter/internal/config"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-func getUsedMemory() float64 {
+func getUsedMemory(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.RaspiCollectorConfig) {
 
 	memInfo, err := os.OpenFile("/proc/meminfo", os.O_RDONLY, 0444)
 	if err != nil {
 		log.Println("Failed to open /proc/meminfo, Error: ", err.Error())
-		return 0
+		return
 	}
 
 	defer memInfo.Close()
@@ -60,5 +64,7 @@ func getUsedMemory() float64 {
 
 	usedMemory := totalMemory - freeMemory - (buffer + cached)
 	usedMemory = (usedMemory / 1024) + (usedMemory % 1024)
-	return float64(usedMemory)
+	memoryUsageMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, float64(usedMemory))
+	memoryUsageMetric = prometheus.NewMetricWithTimestamp(time.Now(), memoryUsageMetric)
+	ch <- memoryUsageMetric
 }
