@@ -27,7 +27,8 @@ type Collector struct {
 	Metrices map[string]*prometheus.Desc
 }
 
-func NewCollector() *Collector {
+func NewCollector(collectorConfig *config.KvmCollectorConfig) *Collector {
+	vmCollectorConfig = collectorConfig
 	hostname, err := os.Hostname()
 
 	if err != nil {
