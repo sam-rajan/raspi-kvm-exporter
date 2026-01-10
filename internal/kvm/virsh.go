@@ -24,7 +24,7 @@ var virshMetrics = &VirshMetrics{
 
 func getDomainsUp(ch chan<- prometheus.Metric, desc *prometheus.Desc, config config.KvmCollectorConfig) {
 
-	metrics := &VirshMetrics{
+	virshMetrics = &VirshMetrics{
 		VMStatus:     map[string]float64{},
 		MemoryStatus: map[string]float64{},
 		CPUTime:      map[string]float64{},
@@ -36,6 +36,7 @@ func getDomainsUp(ch chan<- prometheus.Metric, desc *prometheus.Desc, config con
 		return
 	}
 
+	defer l.Disconnect()
 	domains, _, err := l.ConnectListAllDomains(1, libvirt.ConnectListDomainsActive)
 	if err != nil {
 		log.Printf("failed to retrieve domains: %v", err)
@@ -44,15 +45,15 @@ func getDomainsUp(ch chan<- prometheus.Metric, desc *prometheus.Desc, config con
 
 	for _, domain := range domains {
 		state, _, mem, _, cpuTime, _ := l.DomainGetInfo(domain)
-		metrics.VMStatus[domain.Name] = float64(state)
+		virshMetrics.VMStatus[domain.Name] = float64(state)
 		memKb := (mem / 1000) + (mem % 1000)
 		memMb := (memKb / 1024) + (memKb % 1024)
-		metrics.MemoryStatus[domain.Name] = float64(memMb)
-		metrics.CPUTime[domain.Name] = float64(cpuTime)
+		virshMetrics.MemoryStatus[domain.Name] = float64(memMb)
+		virshMetrics.CPUTime[domain.Name] = float64(cpuTime)
 	}
 
-	for key, val := range virshMetrics.VMStatus {
-		domainUpMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, val, key)
+	for _, val := range virshMetrics.VMStatus {
+		domainUpMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, val)
 		domainUpMetric = prometheus.NewMetricWithTimestamp(time.Now(), domainUpMetric)
 		ch <- domainUpMetric
 	}

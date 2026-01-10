@@ -20,4 +20,10 @@ func setDefaultConfigValue(config *CollectorConfig) {
 		*config.Collectors.Raspi.Enabled = true
 	}
 
+	if config.Collectors.Raspi.Disk == nil || config.Collectors.Raspi.Disk["Enabled"] == nil {
+		config.Collectors.Raspi.Disk = map[string]any{
+			"Enabled": true,
+			"Devices": config.Collectors.Raspi.Disk["Devices"],
+		}
+	}
 }
