@@ -17,17 +17,9 @@ func main() {
 	configFile := flag.String("config", "", "Path to config file.")
 	flag.Parse()
 
-	collectorConfig := &config.CollectorConfig{}
-	if *configFile != "" {
-		err := collectorConfig.LoadConfig(*configFile)
-		if err != nil {
-			log.Fatal("Failed to load config file", configFile)
-		}
-
-		//set port if it's passed in cli
-		if collectorConfig.Port == "" {
-			collectorConfig.Port = *listenPort
-		}
+	collectorConfig := config.NewCollectorConfig(configFile)
+	if listenPort != nil {
+		collectorConfig.Port = *listenPort
 	}
 
 	if *collectorConfig.Collectors.Kvm.Enabled {

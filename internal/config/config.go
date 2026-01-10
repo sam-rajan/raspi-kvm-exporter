@@ -18,3 +18,20 @@ type RaspiCollectorConfig struct {
 type KvmCollectorConfig struct {
 	Enabled *bool `yaml:"enabled,omitempty"`
 }
+
+func NewCollectorConfig(configFile *string) *CollectorConfig {
+	collectorConfig := &CollectorConfig{
+		Port: "9000",
+		Collectors: Collector{
+			Kvm:   KvmCollectorConfig{},
+			Raspi: RaspiCollectorConfig{},
+		},
+	}
+
+	if configFile != nil {
+		collectorConfig.loadConfig(*configFile)
+	}
+
+	setDefaultConfigValue(collectorConfig)
+	return collectorConfig
+}

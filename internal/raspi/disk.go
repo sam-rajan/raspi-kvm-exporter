@@ -47,7 +47,7 @@ func getDiskUsage(ch chan<- prometheus.Metric, desc *prometheus.Desc, config con
 			}
 		}
 
-		if !flag {
+		if !flag && len(deviceList) > 0 {
 			continue
 		}
 

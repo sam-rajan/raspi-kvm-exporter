@@ -6,7 +6,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func (config *CollectorConfig) LoadConfig(filepath string) error {
+func (config *CollectorConfig) loadConfig(filepath string) error {
 	data, err := os.ReadFile(filepath)
 	if err != nil {
 		return err
@@ -16,7 +16,6 @@ func (config *CollectorConfig) LoadConfig(filepath string) error {
 	if err != nil {
 		return err
 	}
-	setDefaultConfigValue(config)
 
 	return nil
 }
