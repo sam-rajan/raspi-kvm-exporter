@@ -32,7 +32,9 @@ func NewCollectorConfig(configFile *string) *CollectorConfig {
 
 	if configFile != nil {
 		err := collectorConfig.loadConfig(*configFile)
-		log.Println(err.Error())
+		if err != nil {
+			log.Println(err.Error())
+		}
 	}
 
 	setDefaultConfigValue(collectorConfig)
