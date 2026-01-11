@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"raspikvm_exporter/internal/config"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -21,6 +22,10 @@ var metricGenerator = map[string]func(chan<- prometheus.Metric, *prometheus.Desc
 	"domainsUp":         getDomainsUp,
 	"domainMemoryUsage": getDomainMemoryUsage,
 	"domainCpuUsage":    getDomainCpuUsage,
+}
+
+var syncTask = map[string]bool{
+	"domainsUp": true,
 }
 
 type Collector struct {
@@ -54,11 +59,23 @@ func (collector *Collector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
-
+	var wg sync.WaitGroup
 	log.Println("Starting KVM metrics collection")
 	for key, desc := range collector.Metrices {
-		metricGenerator[key](ch, desc, *vmCollectorConfig)
+
+		log.Println("Collecting metric: ", key)
+		if syncTask[key] {
+			metricGenerator[key](ch, desc, *vmCollectorConfig)
+			continue
+		}
+		wg.Add(1)
+		go func(k string, d *prometheus.Desc) {
+			metricGenerator[k](ch, d, *vmCollectorConfig)
+			wg.Done()
+		}(key, desc)
 	}
+
+	wg.Wait()
 
 	log.Println("Finished KVM Metrics collection")
 }

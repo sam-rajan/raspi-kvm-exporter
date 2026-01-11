@@ -6,6 +6,7 @@ package raspi
 import (
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"raspikvm_exporter/internal/config"
@@ -28,6 +29,10 @@ var metricGenerator = map[string]func(chan<- prometheus.Metric, *prometheus.Desc
 	"diskUsage":   getDiskUsage,
 	"readBytes":   getDiskReads,
 	"writeBytes":  getDiskWrites,
+}
+
+var syncTask = map[string]bool{
+	"diskUsage": true,
 }
 
 type Collector struct {
@@ -76,18 +81,32 @@ func (collector *Collector) Describe(ch chan<- *prometheus.Desc) {
 func (collector *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	log.Println("Starting Raspi Metrics collection")
-
 	up := prometheus.MustNewConstMetric(collector.Metrices["up"], prometheus.GaugeValue, 1.0)
 	up = prometheus.NewMetricWithTimestamp(time.Now(), up)
 	ch <- up
 
+	var wg sync.WaitGroup
 	for key, desc := range collector.Metrices {
 		if key == "up" {
 			continue
 		}
 
-		metricGenerator[key](ch, desc, *raspiCollectorConfig)
+		log.Println("Collecting metric: ", key)
+
+		if syncTask[key] {
+			metricGenerator[key](ch, desc, *raspiCollectorConfig)
+			continue
+		}
+
+		wg.Add(1)
+		go func(k string, d *prometheus.Desc) {
+			metricGenerator[k](ch, d, *raspiCollectorConfig)
+			wg.Done()
+		}(key, desc)
+
 	}
+
+	wg.Wait()
 
 	log.Println("Finished Raspi Metrics collection")
 
