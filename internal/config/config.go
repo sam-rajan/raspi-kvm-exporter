@@ -3,7 +3,7 @@ package config
 import "log"
 
 type CollectorConfig struct {
-	Port       string    `yaml:"port"`
+	Port       *string   `yaml:"port"`
 	Collectors Collector `yaml:"collectors"`
 }
 
@@ -23,14 +23,13 @@ type KvmCollectorConfig struct {
 
 func NewCollectorConfig(configFile *string) *CollectorConfig {
 	collectorConfig := &CollectorConfig{
-		Port: "9000",
 		Collectors: Collector{
 			Kvm:   KvmCollectorConfig{},
 			Raspi: RaspiCollectorConfig{},
 		},
 	}
 
-	if configFile != nil {
+	if *configFile != "" {
 		err := collectorConfig.loadConfig(*configFile)
 		if err != nil {
 			log.Println(err.Error())

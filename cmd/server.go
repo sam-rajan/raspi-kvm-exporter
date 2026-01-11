@@ -13,13 +13,13 @@ import (
 )
 
 func main() {
-	listenPort := flag.String("port", "9000", "Port to used by server to listen.")
+	listenPort := flag.String("port", "", "Port to used by server to listen.")
 	configFile := flag.String("config", "", "Path to config file.")
 	flag.Parse()
 
 	collectorConfig := config.NewCollectorConfig(configFile)
-	if listenPort != nil {
-		collectorConfig.Port = *listenPort
+	if *listenPort != "" {
+		collectorConfig.Port = listenPort
 	}
 
 	if *collectorConfig.Collectors.Kvm.Enabled {
@@ -33,8 +33,8 @@ func main() {
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
-	log.Printf("Exporter starting at port %s", collectorConfig.Port)
-	err := http.ListenAndServe(":"+collectorConfig.Port, nil)
+	log.Printf("Exporter starting at port %s", *collectorConfig.Port)
+	err := http.ListenAndServe(":"+*collectorConfig.Port, nil)
 
 	if err != nil {
 		log.Fatal(err.Error())
