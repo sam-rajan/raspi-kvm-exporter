@@ -36,10 +36,28 @@ Before installing the Prometheus Node Exporter, ensure you have the following pr
 4. Start the Node Exporter:
 
    ```bash
-   ./build/raspi-kvm-exporter -exporter.port=9100
+   ./build/raspi-kvm-exporter -port=9100 -config=/etc/collector.yml
    ```
 
-By default, the Exporter will listen on port 9000. You can configure the port by passing `-exporter.port=<PORT>`
+By default, the Exporter will listen on port 9000. You can configure the port by passing `-port=<PORT>`
+
+### Config file sample
+
+```yaml
+port: 9090
+collectors:
+  kvm:
+    enabled: true
+  raspi:
+    enabled: true
+    disk:
+      enabled: true
+      disk:
+      - sda1
+      - sda2
+      - sda3
+      - sda4
+```
 
 
 ## Usage
