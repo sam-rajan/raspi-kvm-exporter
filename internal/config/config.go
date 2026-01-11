@@ -1,5 +1,7 @@
 package config
 
+import "log"
+
 type CollectorConfig struct {
 	Port       string    `yaml:"port"`
 	Collectors Collector `yaml:"collectors"`
@@ -29,7 +31,8 @@ func NewCollectorConfig(configFile *string) *CollectorConfig {
 	}
 
 	if configFile != nil {
-		collectorConfig.loadConfig(*configFile)
+		err := collectorConfig.loadConfig(*configFile)
+		log.Println(err.Error())
 	}
 
 	setDefaultConfigValue(collectorConfig)
