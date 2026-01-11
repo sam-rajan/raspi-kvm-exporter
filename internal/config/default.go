@@ -1,8 +1,9 @@
 package config
 
 func setDefaultConfigValue(config *CollectorConfig) {
-	if config.Port == "" {
-		config.Port = "9000"
+	if config.Port == nil {
+		port := "9000"
+		config.Port = &port
 	}
 
 	if config.Collectors.Kvm.Enabled == nil {
