@@ -43,7 +43,7 @@ func NewCollector(collectorConfig *config.KvmCollectorConfig) *Collector {
 	return &Collector{
 		Metrices: map[string]*prometheus.Desc{
 			"domainsUp": prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domains_up"),
-				"Number of domains up", nil, prometheus.Labels{"host": hostname}),
+				"Number of domains up", []string{"vm"}, prometheus.Labels{"host": hostname}),
 			"domainMemoryUsage": prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domain_memory_usage_mb"),
 				"Virtual machine memory usage", []string{"vm"}, prometheus.Labels{"host": hostname}),
 			"domainCpuUsage": prometheus.NewDesc(prometheus.BuildFQName(NameSpace, "", "domain_cpu_time_ms"),

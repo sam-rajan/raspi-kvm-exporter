@@ -52,8 +52,8 @@ func getDomainsUp(ch chan<- prometheus.Metric, desc *prometheus.Desc, config con
 		virshMetrics.CPUTime[domain.Name] = float64(cpuTime)
 	}
 
-	for _, val := range virshMetrics.VMStatus {
-		domainUpMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, val)
+	for key, val := range virshMetrics.VMStatus {
+		domainUpMetric := prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, val, key)
 		domainUpMetric = prometheus.NewMetricWithTimestamp(time.Now(), domainUpMetric)
 		ch <- domainUpMetric
 	}
